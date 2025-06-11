@@ -335,6 +335,10 @@ YTMainAppControlsOverlayView *controlsOverlayView;
 - (BOOL)enableSkippableAd { return YES; }
 %end
 
+%hook YTHotConfig
+- (BOOL)clientInfraClientConfigIosEnableFillingEncodedHacksInnertubeContext { return NO; }
+%end
+
 %hook YTAdShieldUtils
 + (id)spamSignalsDictionary { return @{}; }
 + (id)spamSignalsDictionaryWithoutIDFA { return @{}; }
@@ -391,6 +395,9 @@ YTMainAppControlsOverlayView *controlsOverlayView;
 %hook YTIClientMdxGlobalConfig
 %new(B@:)
 - (BOOL)enableSkippableAd { return YES; }
+%end
+%hook YTHotConfig
+- (BOOL)clientInfraClientConfigIosEnableFillingEncodedHacksInnertubeContext { return NO; }
 %end
 %hook YTAdShieldUtils
 + (id)spamSignalsDictionary { return @{}; }
@@ -864,58 +871,6 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 %hook YTHotConfig
 - (BOOL)isTabletFullscreenSwipeGesturesEnabled { return NO; } // Disable Swipe-to-fullscreen (iPad)
 %end
-%end
-
-// Fix LowContrastMode - @arichornlover
-static int contrastMode() {
-    NSString *appVersion = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
-    NSComparisonResult result1 = [appVersion compare:@"17.33.2" options:NSNumericSearch];
-    NSComparisonResult result2 = [appVersion compare:@"17.38.10" options:NSNumericSearch];
-
-    if (result1 != NSOrderedAscending && result2 != NSOrderedDescending) {
-        return [[NSUserDefaults standardUserDefaults] integerForKey:@"lcm"];
-    } else {
-        return 0;
-    }
-}
-
-%group gFixLowContrastMode
-%hook NSUserDefaults
-- (NSInteger)integerForKey:(NSString *)defaultName {
-    if ([defaultName isEqualToString:@"lcm"]) {
-        return contrastMode();
-    }
-    return %orig;
-}
-%end
-
-%hook NSBundle
-- (id)objectForInfoDictionaryKey:(NSString *)key {
-    if ([key isEqualToString:@"CFBundleShortVersionString"]) {
-        return @"17.38.10";
-    }
-    return %orig;
-}
-%end
-
-%hook YTVersionUtils
-+ (NSString *)appVersion { 
-    return @"17.38.10";
-}
-%end
-
-/*
-%hook YTSettingsCell // Remove v17.38.10 Version Number - @Dayanch96
-- (void)setDetailText:(id)arg1 {
-    NSDictionary *infoDictionary = [[NSBundle mainBundle] infoDictionary];
-    NSString *appVersion = infoDictionary[@"CFBundleShortVersionString"];
-
-    if ([arg1 isEqualToString:@"17.38.10"]) {
-        arg1 = appVersion;
-    } %orig(arg1);
-}
-%end
-*/
 %end
 
 // Disable Modern/Rounded Buttons (_ASDisplayView Version's not supported) - @arichornlover
@@ -1988,9 +1943,6 @@ static int contrastMode() {
     if (IS_ENABLED(kClassicVideoPlayer)) {
         %init(gClassicVideoPlayer);
     }
-    if (IS_ENABLED(kFixLowContrastMode)) {
-        %init(gFixLowContrastMode);
-    }
     if (IS_ENABLED(kDisableModernButtons)) {
         %init(gDisableModernButtons);
     }
@@ -2076,7 +2028,6 @@ static int contrastMode() {
         [userDefaults setBool:enableVersionSpooferEnabled forKey:kEnableVersionSpoofer];
     }
     NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    [userDefaults setBool:ytNoModernUIEnabled ? ytNoModernUIEnabled : [userDefaults boolForKey:kFixLowContrastMode] forKey:kFixLowContrastMode];
     [userDefaults setBool:ytNoModernUIEnabled ? ytNoModernUIEnabled : [userDefaults boolForKey:kDisableModernButtons] forKey:kDisableModernButtons];
     [userDefaults setBool:ytNoModernUIEnabled ? ytNoModernUIEnabled : [userDefaults boolForKey:kDisableRoundedHints] forKey:kDisableRoundedHints];
     [userDefaults setBool:ytNoModernUIEnabled ? ytNoModernUIEnabled : [userDefaults boolForKey:kDisableModernFlags] forKey:kDisableModernFlags];
